@@ -21,7 +21,7 @@ module Supply
 
     # Supply authentication file
     def self.service_account_authentication(params: nil)
-      unless params[:json_key] || params[:json_key_data]
+      unless params[:json_key] || params[:json_key_data] || params[:use_application_default_credentials]
         if UI.interactive?
           UI.important("To not be asked about this value, you can specify it using 'json_key'")
           json_key_path = UI.input("The service account json file used to authenticate with Google: ")
@@ -46,7 +46,11 @@ module Supply
     # Initializes the service and its auth_client using the specified information
     # @param service_account_json: The raw service account Json data
     def initialize(service_account_json: nil, params: nil)
-      auth_client = Google::Auth::ServiceAccountCredentials.make_creds(json_key_io: service_account_json, scope: self.class::SCOPE)
+      if params[:use_application_default_credentials]
+        auth_client = Google::Auth::ServiceAccountCredentials.make_creds(scope: self.class::SCOPE)
+      else
+        auth_client = Google::Auth::ServiceAccountCredentials.make_creds(json_key_io: service_account_json, scope: self.class::SCOPE)
+      end
 
       UI.verbose("Fetching a new access token from Google...")
 
@@ -111,7 +115,7 @@ module Supply
     #####################################################
 
     def self.service_account_authentication(params: nil)
-      if params[:json_key] || params[:json_key_data]
+      if params[:json_key] || params[:json_key_data] || params[:use_application_default_credentials]
         super(params: params)
       elsif params[:key] && params[:issuer]
         require 'google/api_client/auth/key_utils'
